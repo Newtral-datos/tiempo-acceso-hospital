@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Tiempo de acceso al hospital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="ui">
+      <div class="ui-inner">
+        <div class="ui-left"></div>
+
+        <div class="ui-center">
+          <div id="legend" class="legend">
+            <div class="legend-title">Tiempo de acceso al hospital</div>
+            <div class="legend-subtitle">Tiempo mínimo de viaje (minutos)</div>
+            <div class="legend-grid">
+              <div id="legend-swatches" class="legend-swatches"></div>
+              <div id="legend-labels"   class="legend-labels"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ui-right"></div>
+      </div>
+    </header>
+
+    <main id="map"></main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
