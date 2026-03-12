@@ -1,8 +1,6 @@
 /* ── Configuración ── */
 const PMTILES_FILE     = 'healthcare_h3_r6.pmtiles';
 const PMTILES_FILE_LOW = 'healthcare_h3_r4.pmtiles';
-const PMTILES_URL      = new URL(PMTILES_FILE,     location.href).href;
-const PMTILES_URL_LOW  = new URL(PMTILES_FILE_LOW, location.href).href;
 
 const INITIAL_CENTER = [10, 52];
 const INITIAL_ZOOM   = 3;
@@ -71,23 +69,6 @@ const map = new maplibregl.Map({
 });
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-/* ── Carga PMTiles ──
-   Si se sirve localmente sin soporte de Range requests (file://),
-   cargamos el fichero entero en memoria. Con un servidor HTTP normal
-   el protocolo PMTiles usa Range requests directamente. */
-async function crearPMTiles(file, url) {
-  const IS_LOCAL = location.protocol === 'file:';
-  if (IS_LOCAL) {
-    const buf = await fetch(file).then(r => r.arrayBuffer());
-    const src = {
-      getBytes: (off, len) => Promise.resolve({ data: buf.slice(off, off + len) }),
-      getKey:   () => url
-    };
-    return new pmtiles.PMTiles(src);
-  }
-  return new pmtiles.PMTiles(url);
-}
-
 /* ── Carga del mapa ── */
 map.on('load', async () => {
   /* Mapa base */
@@ -103,21 +84,26 @@ map.on('load', async () => {
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile.bind(protocol));
 
-  const [pHigh, pLow] = await Promise.all([
-    crearPMTiles(PMTILES_FILE,     PMTILES_URL),
-    crearPMTiles(PMTILES_FILE_LOW, PMTILES_URL_LOW)
-  ]);
-  protocol.add(pHigh);
-  protocol.add(pLow);
+  /* En file:// no hay Range requests: cargamos los archivos enteros en memoria */
+  if (location.protocol === 'file:') {
+    const cargar = async (file) => {
+      const buf = await fetch(file).then(r => r.arrayBuffer());
+      protocol.add(new pmtiles.PMTiles({
+        getBytes: (off, len) => Promise.resolve({ data: buf.slice(off, off + len) }),
+        getKey:   () => file
+      }));
+    };
+    await Promise.all([cargar(PMTILES_FILE), cargar(PMTILES_FILE_LOW)]);
+  }
 
-  /* Fuentes vectoriales */
+  /* Fuentes vectoriales — rutas relativas, funcionan tanto en local como en GH Pages */
   map.addSource('healthcare', {
     type: 'vector',
-    url: `pmtiles://${PMTILES_URL}`
+    url: `pmtiles://${PMTILES_FILE}`
   });
   map.addSource('healthcare-low', {
     type: 'vector',
-    url: `pmtiles://${PMTILES_URL_LOW}`
+    url: `pmtiles://${PMTILES_FILE_LOW}`
   });
 
   const FILL_PAINT = {
