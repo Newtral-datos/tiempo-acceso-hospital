@@ -5,7 +5,7 @@ const PMTILES_FILE_LOW = 'healthcare_h3_r4.pmtiles';
 const INITIAL_CENTER = [10, 52];
 const INITIAL_ZOOM   = 3;
 
-/* Cortes (minutos) y paleta verde → rojo */
+/* Cortes por minutos y paleta verde → rojo */
 const BREAKS = [10, 20, 30, 45, 60, 90, 120];
 const COLORS  = ['#006837', '#1a9641', '#66bd63', '#a6d96a', '#fee08b', '#fdae61', '#f46d43', '#d73027'];
 
