@@ -58,6 +58,89 @@ function buildLegend() {
   });
 }
 
+/* ── Geocoder (Nominatim) ── */
+class GeocoderControl {
+  onAdd(map) {
+    this._map = map;
+    this._container = document.createElement('div');
+    this._container.className = 'maplibregl-ctrl geocoder-ctrl';
+
+    this._input = document.createElement('input');
+    this._input.type = 'text';
+    this._input.placeholder = 'Buscar lugar…';
+    this._input.className = 'geocoder-input';
+    this._input.setAttribute('autocomplete', 'off');
+
+    this._list = document.createElement('div');
+    this._list.className = 'geocoder-results';
+
+    this._container.appendChild(this._input);
+    this._container.appendChild(this._list);
+
+    let timer;
+    this._input.addEventListener('input', () => {
+      clearTimeout(timer);
+      const q = this._input.value.trim();
+      if (q.length < 3) { this._list.innerHTML = ''; this._list.hidden = true; return; }
+      timer = setTimeout(() => this._search(q), 350);
+    });
+
+    this._input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { this._list.hidden = true; }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!this._container.contains(e.target)) this._list.hidden = true;
+    });
+
+    return this._container;
+  }
+
+  async _search(q) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=es`;
+      const data = await fetch(url).then(r => r.json());
+      this._render(data);
+    } catch { /* red no disponible */ }
+  }
+
+  _render(items) {
+    this._list.innerHTML = '';
+    if (!items.length) {
+      const el = document.createElement('div');
+      el.className = 'geocoder-item geocoder-empty';
+      el.textContent = 'Sin resultados';
+      this._list.appendChild(el);
+    } else {
+      items.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'geocoder-item';
+        el.textContent = item.display_name;
+        el.addEventListener('click', () => {
+          this._input.value = item.display_name;
+          this._list.hidden = true;
+          const bb = item.boundingbox; // [S, N, W, E]
+          if (bb) {
+            this._map.fitBounds(
+              [[parseFloat(bb[2]), parseFloat(bb[0])], [parseFloat(bb[3]), parseFloat(bb[1])]],
+              { padding: 60, maxZoom: 14 }
+            );
+          } else {
+            this._map.flyTo({ center: [parseFloat(item.lon), parseFloat(item.lat)], zoom: 12 });
+          }
+        });
+        this._list.appendChild(el);
+      });
+    }
+    this._list.hidden = false;
+  }
+
+  onRemove() {
+    this._container.parentNode?.removeChild(this._container);
+    this._map = undefined;
+  }
+}
+
 /* ── Mapa ── */
 const map = new maplibregl.Map({
   container: 'map',
@@ -67,6 +150,7 @@ const map = new maplibregl.Map({
   minZoom: 2,
   antialias: true
 });
+map.addControl(new GeocoderControl(), 'top-right');
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
 /* ── Carga del mapa ── */
